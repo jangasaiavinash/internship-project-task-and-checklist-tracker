@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+backend/venv/
+venv/
+.venv/
+env/
+.env/
+
+# Production builds
+frontend/dist/
+dist/
+build/
+
+# IDE / System files
+.vscode/
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# Python cache / bytecode
+__pycache__/
+backend/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Local configuration
+.env
+backend/.env
+frontend/.env
+*.local
+
+# Database binary files
+database/data/
