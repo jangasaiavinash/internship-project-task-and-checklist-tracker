@@ -14,20 +14,28 @@ export default function ModulePage({ config }) {
   const employee = JSON.parse(localStorage.getItem('employee') || 'null')
   const isEmployee = !!employee
 
-  useEffect(() => {
-    setForm(emptyForm)
-    setEditing(null)
-    load()
-  }, [config])
+ useEffect(() => {
+  setForm(emptyForm)
+  setEditing(null)
+  setError('')
+  load()
+}, [config])
 
-  async function load(q = search) {
+ async function load(q = search) {
+  try {
     const params = { search: q }
+
     if (isEmployee && employee?.id) {
       params.employee_id = employee.id
     }
+
     const { data } = await api.get(config.endpoint, { params })
     setItems(data)
+    setError('')
+  } catch (err) {
+    setError(err.response?.data?.error || 'Unable to load data')
   }
+}
 
   async function toggleChecklist(item, checked) {
     try {
