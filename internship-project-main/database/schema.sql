@@ -1,5 +1,4 @@
-CREATE DATABASE IF NOT EXISTS internship_tracker;
-USE internship_tracker;
+USE railway;
 
 CREATE TABLE IF NOT EXISTS admins (
   id INT AUTO_INCREMENT PRIMARY KEY,

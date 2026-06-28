@@ -1,3 +1,4 @@
+import email
 import os
 import random
 from datetime import datetime, timedelta, date
@@ -177,13 +178,19 @@ def send_otp():
     otp = str(random.randint(100000, 999999))
     expires_at = datetime.now() + timedelta(minutes=10)
     with db_cursor() as cur:
-        cur.execute("INSERT INTO password_otps (email, otp, expires_at) VALUES (%s, %s, %s)", (email, otp, expires_at))
-    if app.config["MAIL_USERNAME"] and app.config["MAIL_PASSWORD"]:
-        mail.send(Message("Internship Tracker OTP", recipients=[email], body=f"Your OTP is {otp}. It expires in 10 minutes."))
-    else:
-        app.logger.warning("OTP for %s: %s", email, otp)
-    return ok({"message": "OTP sent to email. In development without Gmail config, check Flask logs."})
+        cur.execute(
+            "INSERT INTO password_otps (email, otp, expires_at) VALUES (%s, %s, %s)",
+            (email, otp, expires_at)
+        )
+    mail.send(
+        Message(
+            "Internship Tracker OTP",
+            recipients=[email],
+            body=f"Your OTP is {otp}. It expires in 10 minutes."
+        )
+    )
 
+    return ok({"message": "OTP sent successfully"})
 
 @app.post("/verify-otp")
 def verify_otp():
