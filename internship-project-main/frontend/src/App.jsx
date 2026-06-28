@@ -8,17 +8,23 @@ import Settings from './pages/Settings.jsx'
 
 const modules = {
   projects: {
-    title: 'Projects',
-    endpoint: '/api/projects',
-    fields: [
-      { name: 'name', label: 'Project Name', required: true },
-      { name: 'description', label: 'Description' },
-      { name: 'start_date', label: 'Start Date', type: 'date' },
-      { name: 'end_date', label: 'End Date', type: 'date' },
-      { name: 'status', label: 'Status', type: 'select', options: ['Not Started', 'In Progress', 'Completed', 'On Hold'], required: true },
-    ],
-    columns: ['name', 'status', 'progress', 'start_date', 'end_date'],
-  },
+  title: 'Projects',
+  endpoint: '/api/projects',
+  fields: [
+    { name: 'name', label: 'Project Name', required: true },
+    { name: 'description', label: 'Description' },
+    { name: 'start_date', label: 'Start Date', type: 'date' },
+    { name: 'end_date', label: 'End Date', type: 'date' },
+    {
+      name: 'status',
+      label: 'Status',
+      type: 'select',
+      options: ['Not Started', 'In Progress', 'Completed', 'On Hold'],
+      required: true
+    },
+  ],
+  columns: ['id', 'name', 'status', 'progress', 'start_date', 'end_date'],
+},
   tasks: {
     title: 'Tasks',
     endpoint: '/api/tasks',
@@ -31,7 +37,7 @@ const modules = {
       { name: 'status', label: 'Status', type: 'select', options: ['Pending', 'In Progress', 'Completed'], required: true },
       { name: 'due_date', label: 'Due Date', type: 'date' },
     ],
-    columns: ['title', 'project_name', 'employee_name', 'priority', 'status', 'due_date'],
+    columns: ['id', 'title', 'project_name', 'employee_name', 'priority', 'status', 'due_date'],
   },
   employees: {
     title: 'Employees',
@@ -44,7 +50,7 @@ const modules = {
       { name: 'department', label: 'Department' },
       { name: 'status', label: 'Status', type: 'select', options: ['Active', 'Inactive'], required: true },
     ],
-    columns: ['name', 'email', 'phone', 'role', 'department', 'status'],
+    columns: ['id', 'name', 'email', 'phone', 'role', 'department', 'status'],
   },
   checklist: {
     title: 'Checklist',
@@ -55,7 +61,7 @@ const modules = {
       { name: 'title', label: 'Checklist Item', required: true },
       { name: 'is_done', label: 'Done', type: 'checkbox' },
     ],
-    columns: ['title', 'project_name', 'task_title', 'is_done'],
+    columns: ['id', 'title', 'project_name', 'task_title', 'is_done'],
   },
 }
 
