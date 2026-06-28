@@ -24,18 +24,18 @@ export default function Reports() {
 
   const [form, setForm] = useState({
     title: '',
-    type: 'Task',
+    type: 'Project',
     notes: '',
   })
 
   const [search, setSearch] = useState('')
   const [error, setError] = useState('')
 
-  async function load(q = search) {
+  async function load(query = search) {
     try {
       const response = await api.get('/api/reports', {
         params: {
-          search: q,
+          search: query,
         },
       })
 
@@ -71,7 +71,7 @@ export default function Reports() {
   }
 
   useEffect(() => {
-    load()
+    load('')
   }, [])
 
   async function submit(event) {
@@ -82,12 +82,12 @@ export default function Reports() {
 
       setForm({
         title: '',
-        type: 'Task',
+        type: 'Project',
         notes: '',
       })
 
       setError('')
-      await load()
+      await load('')
     } catch (err) {
       setError(
         err.response?.data?.error ||
@@ -102,14 +102,12 @@ export default function Reports() {
       'Are you sure you want to delete this report?'
     )
 
-    if (!confirmed) {
-      return
-    }
+    if (!confirmed) return
 
     try {
       await api.delete(`/api/reports/${id}`)
       setError('')
-      await load()
+      await load(search)
     } catch (err) {
       setError(
         err.response?.data?.error ||
@@ -120,9 +118,7 @@ export default function Reports() {
   }
 
   function formatDate(value) {
-    if (!value) {
-      return '-'
-    }
+    if (!value) return '-'
 
     const date = new Date(value)
 
@@ -138,97 +134,244 @@ export default function Reports() {
   }
 
   function createFileName(title) {
-    return (title || 'pending-tasks-summary')
+    return (title || 'project-report')
       .trim()
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '')
   }
 
-  function normalizeStatus(status) {
-    return String(status || '')
+  function normalizeType(report) {
+    return String(
+      report.type ||
+        report.project_name ||
+        'Project'
+    )
       .trim()
       .toLowerCase()
   }
 
-  function getEmployeeName(task) {
-    if (task.employee_name) {
-      return task.employee_name
+  function getProjectName(item) {
+    if (item.project_name) {
+      return item.project_name
     }
 
-    if (task.assigned_employee) {
-      return task.assigned_employee
+    const project = data.live.projects.find(
+      (projectItem) =>
+        String(projectItem.id) ===
+        String(item.project_id)
+    )
+
+    return project?.name || '-'
+  }
+
+  function getEmployeeName(item) {
+    if (item.employee_name) {
+      return item.employee_name
     }
 
     const employee = data.live.employees.find(
-      (item) =>
-        String(item.id) ===
-        String(task.employee_id)
+      (employeeItem) =>
+        String(employeeItem.id) ===
+        String(item.employee_id)
     )
 
     return employee?.name || 'Not Assigned'
   }
 
-  function getProjectName(task) {
-    if (task.project_name) {
-      return task.project_name
+  function getTaskTitle(item) {
+    if (item.task_title) {
+      return item.task_title
     }
 
-    const project = data.live.projects.find(
-      (item) =>
-        String(item.id) ===
-        String(task.project_id)
+    const task = data.live.tasks.find(
+      (taskItem) =>
+        String(taskItem.id) ===
+        String(item.task_id)
     )
 
-    return project?.name || 'All Projects'
+    return task?.title || '-'
   }
 
-  function downloadTaskReport(report) {
+  function getReportTable(reportType) {
+    if (reportType === 'project') {
+      return {
+        heading: 'PROJECT DETAILS',
+
+        headers: [
+          'Project Name',
+          'Status',
+          'Progress',
+          'Start Date',
+          'End Date',
+        ],
+
+        rows:
+          data.live.projects.length > 0
+            ? data.live.projects.map((project) => [
+                project.name || '-',
+                project.status || '-',
+                `${project.progress ?? 0}%`,
+                formatDate(project.start_date),
+                formatDate(project.end_date),
+              ])
+            : [
+                [
+                  'No project data available',
+                  '-',
+                  '-',
+                  '-',
+                  '-',
+                ],
+              ],
+      }
+    }
+
+    if (reportType === 'task') {
+      return {
+        heading: 'TASK DETAILS',
+
+        headers: [
+          'Task Title',
+          'Project',
+          'Employee',
+          'Priority',
+          'Status',
+          'Due Date',
+        ],
+
+        rows:
+          data.live.tasks.length > 0
+            ? data.live.tasks.map((task) => [
+                task.title ||
+                  task.task_title ||
+                  '-',
+
+                getProjectName(task),
+
+                getEmployeeName(task),
+
+                task.priority || 'Medium',
+
+                task.status || 'Pending',
+
+                formatDate(task.due_date),
+              ])
+            : [
+                [
+                  'No task data available',
+                  '-',
+                  '-',
+                  '-',
+                  '-',
+                  '-',
+                ],
+              ],
+      }
+    }
+
+    if (reportType === 'employee') {
+      return {
+        heading: 'EMPLOYEE DETAILS',
+
+        headers: [
+          'Employee Name',
+          'Email',
+          'Phone',
+          'Role',
+          'Department',
+          'Status',
+        ],
+
+        rows:
+          data.live.employees.length > 0
+            ? data.live.employees.map(
+                (employee) => [
+                  employee.name || '-',
+                  employee.email || '-',
+                  employee.phone || '-',
+                  employee.role || '-',
+                  employee.department || '-',
+                  employee.status || '-',
+                ]
+              )
+            : [
+                [
+                  'No employee data available',
+                  '-',
+                  '-',
+                  '-',
+                  '-',
+                  '-',
+                ],
+              ],
+      }
+    }
+
+    if (reportType === 'checklist') {
+      return {
+        heading: 'CHECKLIST DETAILS',
+
+        headers: [
+          'Checklist Item',
+          'Project',
+          'Task',
+          'Completion Status',
+        ],
+
+        rows:
+          data.live.checklist.length > 0
+            ? data.live.checklist.map(
+                (item) => [
+                  item.title ||
+                    item.checklist_item ||
+                    '-',
+
+                  getProjectName(item),
+
+                  getTaskTitle(item),
+
+                  item.is_done === true ||
+                  item.is_done === 1 ||
+                  item.is_done === '1'
+                    ? 'Completed'
+                    : 'Pending',
+                ]
+              )
+            : [
+                [
+                  'No checklist data available',
+                  '-',
+                  '-',
+                  '-',
+                ],
+              ],
+      }
+    }
+
+    return {
+      heading: 'REPORT DETAILS',
+      headers: ['Information', 'Details'],
+      rows: [['No data available', '-']],
+    }
+  }
+
+  function downloadReport(report) {
     try {
-      const tasks = data.live.tasks || []
-
-      const completedTasks = tasks.filter(
-        (task) =>
-          normalizeStatus(task.status) ===
-          'completed'
-      )
-
-      const inProgressTasks = tasks.filter(
-        (task) =>
-          normalizeStatus(task.status) ===
-          'in progress'
-      )
-
-      const pendingTasks = tasks.filter(
-        (task) =>
-          normalizeStatus(task.status) ===
-          'pending'
-      )
-
-      const projectNames = [
-        ...new Set(
-          tasks
-            .map((task) => getProjectName(task))
-            .filter(Boolean)
-        ),
-      ]
-
-      const projectText =
-        projectNames.length === 1
-          ? projectNames[0]
-          : projectNames.length > 1
-            ? 'Multiple Projects'
-            : 'No Project Available'
+      const reportType = normalizeType(report)
 
       const reportTitle =
         report.title ||
         report.report_name ||
-        'Pending Tasks Summary Report'
+        'Project Report'
 
       const reportNotes =
         report.notes ||
         report.generated_by ||
-        'This report provides a summary of completed, in-progress, and pending project tasks.'
+        'No additional notes were provided.'
+
+      const tableData =
+        getReportTable(reportType)
 
       const doc = new jsPDF({
         orientation: 'portrait',
@@ -242,7 +385,6 @@ export default function Reports() {
       const pageHeight =
         doc.internal.pageSize.getHeight()
 
-      // Main heading
       doc.setFont('helvetica', 'bold')
       doc.setFontSize(18)
       doc.setTextColor(15, 23, 42)
@@ -256,7 +398,6 @@ export default function Reports() {
         }
       )
 
-      // Report heading
       doc.setFont('helvetica', 'normal')
       doc.setFontSize(12)
       doc.setTextColor(71, 85, 105)
@@ -270,22 +411,28 @@ export default function Reports() {
         }
       )
 
-      // Report information table
       autoTable(doc, {
         startY: 32,
 
         body: [
           [
             'Report Type',
-            'Task',
+            reportType.charAt(0).toUpperCase() +
+              reportType.slice(1),
+
             'Generated Date',
             formatDate(new Date()),
           ],
+
           [
-            'Project',
-            projectText,
             'Prepared For',
             'Glory Simon Interiors',
+
+            'Created Date',
+            formatDate(
+              report.created_at ||
+                report.report_date
+            ),
           ],
         ],
 
@@ -327,28 +474,36 @@ export default function Reports() {
         },
       })
 
-      const informationEndY =
-        doc.lastAutoTable.finalY + 7
-
-      // Task summary table
       autoTable(doc, {
-        startY: informationEndY,
+        startY:
+          doc.lastAutoTable.finalY + 7,
 
         head: [
           [
-            'Total Tasks',
-            'Completed',
-            'In Progress',
-            'Pending',
+            'Projects',
+            'Tasks',
+            'Employees',
+            'Checklist',
           ],
         ],
 
         body: [
           [
-            String(tasks.length),
-            String(completedTasks.length),
-            String(inProgressTasks.length),
-            String(pendingTasks.length),
+            String(
+              data.live.projects.length
+            ),
+
+            String(
+              data.live.tasks.length
+            ),
+
+            String(
+              data.live.employees.length
+            ),
+
+            String(
+              data.live.checklist.length
+            ),
           ],
         ],
 
@@ -382,60 +537,27 @@ export default function Reports() {
         },
       })
 
-      const summaryEndY =
+      let detailsY =
         doc.lastAutoTable.finalY + 10
 
-      // Task details heading
       doc.setFont('helvetica', 'bold')
       doc.setFontSize(12)
       doc.setTextColor(29, 78, 216)
 
       doc.text(
-        'TASK DETAILS',
+        tableData.heading,
         15,
-        summaryEndY
+        detailsY
       )
 
-      const taskRows =
-        tasks.length > 0
-          ? tasks.map((task) => [
-              task.title ||
-                task.task_title ||
-                '-',
-
-              getEmployeeName(task),
-
-              task.priority || 'Medium',
-
-              task.status || 'Pending',
-
-              formatDate(task.due_date),
-            ])
-          : [
-              [
-                'No tasks available',
-                '-',
-                '-',
-                '-',
-                '-',
-              ],
-            ]
-
-      // Task details table
       autoTable(doc, {
-        startY: summaryEndY + 4,
+        startY: detailsY + 4,
 
         head: [
-          [
-            'Task Title',
-            'Employee',
-            'Priority',
-            'Status',
-            'Due Date',
-          ],
+          tableData.headers,
         ],
 
-        body: taskRows,
+        body: tableData.rows,
 
         theme: 'grid',
 
@@ -443,7 +565,6 @@ export default function Reports() {
           fillColor: [29, 78, 216],
           textColor: [255, 255, 255],
           fontStyle: 'bold',
-          halign: 'left',
         },
 
         bodyStyles: {
@@ -456,34 +577,12 @@ export default function Reports() {
         },
 
         styles: {
-          fontSize: 8.5,
-          cellPadding: 3.5,
+          fontSize: 8,
+          cellPadding: 3,
           lineColor: [203, 213, 225],
           lineWidth: 0.3,
           overflow: 'linebreak',
           valign: 'middle',
-        },
-
-        columnStyles: {
-          0: {
-            cellWidth: 48,
-          },
-
-          1: {
-            cellWidth: 38,
-          },
-
-          2: {
-            cellWidth: 24,
-          },
-
-          3: {
-            cellWidth: 31,
-          },
-
-          4: {
-            cellWidth: 39,
-          },
         },
 
         margin: {
@@ -492,9 +591,17 @@ export default function Reports() {
         },
 
         didDrawPage: () => {
-          doc.setFont('helvetica', 'normal')
+          doc.setFont(
+            'helvetica',
+            'normal'
+          )
+
           doc.setFontSize(8)
-          doc.setTextColor(100, 116, 139)
+          doc.setTextColor(
+            100,
+            116,
+            139
+          )
 
           doc.text(
             `Page ${doc.internal.getNumberOfPages()}`,
@@ -510,13 +617,14 @@ export default function Reports() {
       let notesStartY =
         doc.lastAutoTable.finalY + 10
 
-      // Add new page when there is insufficient room
-      if (notesStartY > pageHeight - 55) {
+      if (
+        notesStartY >
+        pageHeight - 60
+      ) {
         doc.addPage()
         notesStartY = 20
       }
 
-      // Notes heading
       doc.setFont('helvetica', 'bold')
       doc.setFontSize(12)
       doc.setTextColor(29, 78, 216)
@@ -539,7 +647,6 @@ export default function Reports() {
           noteLines.length * 5 + 12
         )
 
-      // Notes background
       doc.setFillColor(239, 246, 255)
       doc.setDrawColor(147, 197, 253)
 
@@ -553,7 +660,11 @@ export default function Reports() {
         'FD'
       )
 
-      doc.setFont('helvetica', 'normal')
+      doc.setFont(
+        'helvetica',
+        'normal'
+      )
+
       doc.setFontSize(9.5)
       doc.setTextColor(31, 41, 55)
 
@@ -568,47 +679,58 @@ export default function Reports() {
         noteBoxHeight +
         14
 
-      // Footer line
-      doc.setDrawColor(203, 213, 225)
+      if (footerY < pageHeight - 15) {
+        doc.setDrawColor(
+          203,
+          213,
+          225
+        )
 
-      doc.line(
-        15,
-        footerY,
-        pageWidth - 15,
-        footerY
-      )
+        doc.line(
+          15,
+          footerY,
+          pageWidth - 15,
+          footerY
+        )
 
-      // Footer text
-      doc.setFont('helvetica', 'normal')
-      doc.setFontSize(8.5)
-      doc.setTextColor(71, 85, 105)
+        doc.setFont(
+          'helvetica',
+          'normal'
+        )
 
-      doc.text(
-        'Generated by: Project Task & Checklist Tracker',
-        15,
-        footerY + 7
-      )
+        doc.setFontSize(8.5)
+        doc.setTextColor(
+          71,
+          85,
+          105
+        )
 
-      doc.text(
-        'Company: Glory Simon Interiors',
-        pageWidth - 15,
-        footerY + 7,
-        {
-          align: 'right',
-        }
-      )
+        doc.text(
+          'Generated by: Project Task & Checklist Tracker',
+          15,
+          footerY + 7
+        )
+
+        doc.text(
+          'Company: Glory Simon Interiors',
+          pageWidth - 15,
+          footerY + 7,
+          {
+            align: 'right',
+          }
+        )
+      }
 
       const fileName =
         createFileName(reportTitle)
 
       doc.save(`${fileName}.pdf`)
-
       setError('')
     } catch (err) {
       console.error(err)
 
       setError(
-        'Unable to download the task report PDF'
+        'Unable to download the PDF report'
       )
     }
   }
@@ -679,7 +801,7 @@ export default function Reports() {
 
           <input
             type="text"
-            placeholder="Pending Tasks Summary Report"
+            placeholder="Enter report title"
             value={form.title}
             onChange={(event) =>
               setForm({
@@ -703,12 +825,12 @@ export default function Reports() {
               })
             }
           >
-            <option value="Task">
-              Task
-            </option>
-
             <option value="Project">
               Project
+            </option>
+
+            <option value="Task">
+              Task
             </option>
 
             <option value="Employee">
@@ -742,7 +864,6 @@ export default function Reports() {
           className="primary"
         >
           <Plus size={16} />
-
           Add Report
         </button>
       </form>
@@ -766,13 +887,8 @@ export default function Reports() {
           </thead>
 
           <tbody>
-            {data.reports.map((report) => {
-              const reportType =
-                report.type ||
-                report.project_name ||
-                'Task'
-
-              return (
+            {data.reports.map(
+              (report) => (
                 <tr key={report.id}>
                   <td>
                     {report.title ||
@@ -780,7 +896,9 @@ export default function Reports() {
                   </td>
 
                   <td>
-                    {reportType}
+                    {report.type ||
+                      report.project_name ||
+                      'Project'}
                   </td>
 
                   <td>
@@ -803,24 +921,20 @@ export default function Reports() {
                         gap: '8px',
                       }}
                     >
-                      {String(reportType)
-                        .toLowerCase() ===
-                        'task' && (
-                        <button
-                          type="button"
-                          className="icon-btn"
-                          title="Download Task Report PDF"
-                          onClick={() =>
-                            downloadTaskReport(
-                              report
-                            )
-                          }
-                        >
-                          <Download
-                            size={16}
-                          />
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        className="icon-btn"
+                        title="Download Report PDF"
+                        onClick={() =>
+                          downloadReport(
+                            report
+                          )
+                        }
+                      >
+                        <Download
+                          size={16}
+                        />
+                      </button>
 
                       <button
                         type="button"
@@ -838,7 +952,7 @@ export default function Reports() {
                   </td>
                 </tr>
               )
-            })}
+            )}
 
             {data.reports.length === 0 && (
               <tr>
@@ -859,4 +973,3 @@ export default function Reports() {
     </section>
   )
 }
-
