@@ -18,7 +18,7 @@ export default function Settings() {
           <>
             <label>Admin Name<input value={admin?.name || ''} readOnly /></label>
             <label>Admin Email<input value={admin?.email || ''} readOnly /></label>
-            <p>Use Forgot Password on the login page to update the admin password with Gmail OTP verification.</p>
+            
           </>
         )}
       </div>

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import api from '../api.js'
 
 export default function Login() {
@@ -66,7 +66,7 @@ export default function Login() {
           )
         )}
         <button className="primary">Login</button>
-        {role === 'admin' && <Link to="/forgot-password">Forgot password?</Link>}
+        
       </form>
     </div>
   )
